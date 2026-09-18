@@ -50,6 +50,34 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
+  celery_worker:
+    build:
+      context: ./backend
+    container_name: packagepro_celery
+    environment:
+      - DATABASE_URL=postgresql://packagepro_user:packagepro_password@db:5432/packagepro
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    depends_on:
+      - redis
+      - db
+      - kafka
+    command: celery -A app.core.celery_app worker --loglevel=info
+
+  kafka_consumer:
+    build:
+      context: ./backend
+    container_name: packagepro_kafka_consumer
+    environment:
+      - DATABASE_URL=postgresql://packagepro_user:packagepro_password@db:5432/packagepro
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    depends_on:
+      - redis
+      - db
+      - kafka
+    command: python -m app.tasks.consumer_worker
+
 volumes:
   pgdata:
   redisdata:
